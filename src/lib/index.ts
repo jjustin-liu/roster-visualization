@@ -10,7 +10,8 @@ import {
   OUTSIDE_LABEL_FONT,
   PERFECT_TEAM_VALUE,
   REPLACEMENT_DPM,
-  areaOf,
+  shareOf,
+  areaFor,
   classify,
   deficitBelowReplacement,
   valueOverReplacement,
@@ -198,20 +199,25 @@ export interface PlateOptions {
  * moved by his measured playoff offense change, minutes share by his playoff
  * playability. A player with no reading is his regular-season self.
  */
-export function playoffValue(p: ShapeInput, teamMinutes: number): { dpm: number; value: number; deficit: number } {
+export function playoffValue(p: ShapeInput, teamMinutes: number): { dpm: number; share: number; value: number; deficit: number; area: number } {
   const adj = p.playoff ?? { dpmDelta: 0, shareScale: 1 };
   const dpm = p.oDpm + p.dDpm + adj.dpmDelta;
-  return {
-    dpm,
-    value: valueOverReplacement(dpm, p.minutes * adj.shareScale, teamMinutes, p.games),
-    deficit: deficitBelowReplacement(dpm, p.minutes * adj.shareScale, teamMinutes, p.games),
-  };
+  const share = shareOf(p.minutes * adj.shareScale, teamMinutes, p.games);
+  const value = valueOverReplacement(dpm, p.minutes * adj.shareScale, teamMinutes, p.games);
+  const deficit = deficitBelowReplacement(dpm, p.minutes * adj.shareScale, teamMinutes, p.games);
+  // The drawn area: his level above replacement (or the shortfall below it,
+  // for a hollow outline) to the power, times his share.
+  const area = areaFor(value > 0 ? dpm - REPLACEMENT_DPM : REPLACEMENT_DPM - dpm, share);
+  return { dpm, share, value, deficit, area };
 }
 
-/** A roster's total area in box units before any box is chosen: Σ areaOf(value over replacement). */
+/** A roster's total area in box units before any box is chosen: Σ area of every player above replacement. */
 export function rosterArea(inputs: ShapeInput[]): number {
   const teamMinutes = inputs.reduce((s, p) => s + Math.max(0, p.minutes), 0);
-  return inputs.reduce((s, p) => s + areaOf(playoffValue(p, teamMinutes).value), 0);
+  return inputs.reduce((s, p) => {
+    const v = playoffValue(p, teamMinutes);
+    return s + (v.value > 0 ? v.area : 0);
+  }, 0);
 }
 
 export function buildRosterShapePlate(inputs: ShapeInput[], model?: PortabilityModel, season?: number, opts: PlateOptions = {}): RosterShapePlate {
@@ -222,10 +228,10 @@ export function buildRosterShapePlate(inputs: ShapeInput[], model?: PortabilityM
     // His value is his playoff value when he has a playoff reading: DPM moved
     // by his measured offense change, minutes share by his playability. The
     // team's minutes stay the regular season's, so the shares are on one scale.
-    const { dpm, value, deficit } = playoffValue(p, teamMinutes);
+    const { dpm, value, deficit, area: drawn } = playoffValue(p, teamMinutes);
     // The drawn area: his value, or for a hollow outline his deficit — both to the
     // calibrated power, as a share of the box.
-    const area = areaOf(value > 0 ? value : deficit) / BOX;
+    const area = drawn / BOX;
     let archetype = classify(p);
     let fitted: { total: number; offense: number; defense: number; exponent: number; tiling: number; family: StyleFamily; flaw: RosterShapePlayer['flaw']; reference: string | null } | null = null;
     if (model && p.style) {

@@ -88,27 +88,35 @@ export const BOX_OVER_FULLEST = 1.4;
 export const BOX_GROW_STEP = 1.03;
 
 /** The "+N team" a box of this area is worth: the inverse of `PERFECT_TEAM_VALUE`. */
-export const boxNet = (box: number) => 5 * ((box / 5) ** (1 / SIZE_EXPONENT) + REPLACEMENT_DPM);
+export const boxNet = (box: number) => 5 * ((box / 5) ** (1 / DPM_EXPONENT) + REPLACEMENT_DPM);
 /**
- * AREA IS SUPERLINEAR IN VALUE: area ∝ value^SIZE_EXPONENT. Calibrated to his
- * three diagrams: a log-log fit of his 24 drawn areas on value over replacement
- * — (DPM + 2) × per-game share, see `shareOf` — with a free intercept per
- * diagram gives γ = 1.72, R² = 0.76 (with season-minute shares it was 1.59 and
- * R² 0.40). Linear areas drew Wembanyama at 1.7× Fox when his DPM is 3× Fox's;
- * he draws him at 4.5×, and this rule at 3.0×. "The bigger the shape, the
- * better the player" is not a linear scale. The table still prints the linear
- * value.
+ * AREA IS SUPERLINEAR IN HOW GOOD HE IS, LINEAR IN HOW MUCH HE PLAYS:
+ *
+ *   area ∝ (DPM − replacement)^DPM_EXPONENT × (minutes-per-game share)^SHARE_EXPONENT
+ *
+ * "The bigger the shape, the better the player" is not a linear scale, and it
+ * is the PLAYER it scales, not his minutes. One power on the product of the
+ * two (1.7, fitted to his first 24 drawn areas) compressed the top: it drew
+ * Wembanyama at 1.6× Anunoby (his diagrams: ~1.9×) and 3.0× Fox (his: 4.5×),
+ * because a 1.5× edge in value over replacement came out at 2× and Wembanyama's
+ * fewer minutes took a third of that back. With 2.2 on the level and 1 on the
+ * share, those pairs read 2.2× and 4.3×. This is a CHOICE, stated as one: the
+ * pooled fit of all 41 drawn areas says he sizes starters by role (minutes
+ * per game) even more than by level, but his stars are the biggest shapes in
+ * every diagram and that is the reading this chart is for. The table still
+ * prints the linear value.
  */
-export const SIZE_EXPONENT = 1.7;
+export const DPM_EXPONENT = 2.2;
+export const SHARE_EXPONENT = 1;
 
-/** A shape's area, in the units the box is measured in. */
-export const areaOf = (value: number) => Math.max(0, value) ** SIZE_EXPONENT;
+/** A shape's area, in the units the box is measured in: his level above (or below) replacement, and his minutes-per-game share. */
+export const areaFor = (dpmOver: number, share: number) => Math.max(0, dpmOver) ** DPM_EXPONENT * Math.max(0, share) ** SHARE_EXPONENT;
 
 /**
  * The box: five players at DPM = PERFECT_TEAM_NET / 5 for every minute — each
- * worth (PERFECT_TEAM_NET/5 + 2) per slot, drawn at that value to the power.
+ * (PERFECT_TEAM_NET/5 + 2) above replacement at a full share.
  */
-export const PERFECT_TEAM_VALUE = 5 * areaOf(PERFECT_TEAM_NET / 5 - REPLACEMENT_DPM);
+export const PERFECT_TEAM_VALUE = 5 * areaFor(PERFECT_TEAM_NET / 5 - REPLACEMENT_DPM, 1);
 
 /**
  * Every shape is drawn TO SCALE, however small. Below this share of the box a

@@ -13,7 +13,7 @@
  * their tiling is entered as the 1.0 those shapes are by construction.
  */
 import { readFileSync } from 'fs';
-import { buildRosterShapePlate, flawsOf, outlineFor, portabilityOf, referenceOutline, valueOverReplacement, PERFECT_TEAM_NET, PERFECT_TEAM_VALUE, type PortabilityModel } from '../src/lib/index';
+import { areaFor, buildRosterShapePlate, flawsOf, outlineFor, portabilityOf, referenceOutline, shareOf, PERFECT_TEAM_NET, PERFECT_TEAM_VALUE, REPLACEMENT_DPM, type PortabilityModel } from '../src/lib/index';
 import type { SeasonSnapshot } from '../src/data';
 
 const HIS: Record<string, [name: string, shape: string, areaPct: number, tiling: number][]> = {
@@ -92,7 +92,8 @@ for (const [title, list] of Object.entries(HIS)) {
     const port = portabilityOf(model, lp);
     const entry = model.wyman.reference.find((e) => e.name === name && e.season === 2026);
     const outline = entry ? referenceOutline(entry, 0) : outlineFor(model, port, flawsOf(model, lp, 2026), p.oDpm + p.dDpm);
-    return { name, team: p.team, minutes: p.minutes, shape, hisArea: areaPct, hisTiling: tiling, value: valueOverReplacement(p.oDpm + p.dDpm, p.minutes, teamMinutes, p.games), fit: port.total, tiling: outline.fill, kind: outline.kind };
+    // "Our size" is the drawn AREA (level to the power times share), the same quantity as his.
+    return { name, team: p.team, minutes: p.minutes, shape, hisArea: areaPct, hisTiling: tiling, value: areaFor(p.oDpm + p.dDpm - REPLACEMENT_DPM, shareOf(p.minutes, teamMinutes, p.games)), fit: port.total, tiling: outline.fill, kind: outline.kind };
   });
   const hisTotal = rows.reduce((s, r) => s + r.hisArea, 0);
   const ourTotal = rows.reduce((s, r) => s + r.value, 0);

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { exponentForFill, pointedFill, polygonArea, polygonsOverlap, ratioForFill, shapePolygon, superellipseFill, SHAPE_ROTATIONS, type ShapeKind } from './geometry';
-import { areaOf, classify, deficitBelowReplacement, estimateCreation, handlingOf, shareOf, valueOverReplacement, GAMES_FULL, INSIDE_LABEL_SHARE, PERFECT_TEAM_VALUE, SIZE_EXPONENT, type ShapeInput } from './model';
+import { areaFor, classify, deficitBelowReplacement, estimateCreation, handlingOf, shareOf, valueOverReplacement, DPM_EXPONENT, GAMES_FULL, INSIDE_LABEL_SHARE, PERFECT_TEAM_VALUE, REPLACEMENT_DPM, type ShapeInput } from './model';
 import { packShapes, placeExtras } from './pack';
 import { franchiseOf, teamName } from '../teams';
 import { ridge, solve, symmetricEigen, varimax, weightedQuantiles } from './fit';
@@ -170,9 +170,9 @@ describe('plate', () => {
   test('fill is the sum of shares and nothing drawn for visibility changes it', () => {
     const shares = plate.players.reduce((s, p) => s + p.share, 0);
     expect(plate.fill).toBeCloseTo(shares, 12);
-    // Area is value to the calibrated power, so the fill is Σ value^γ over the box, not Σ value.
-    expect(plate.fill).toBeCloseTo(plate.players.reduce((s, p) => s + areaOf(p.value), 0) / PERFECT_TEAM_VALUE, 12);
-    expect(SIZE_EXPONENT).toBeGreaterThan(1);
+    // Area is his level to a power times his share, so the fill is not Σ value.
+    expect(plate.fill).toBeCloseTo(plate.players.filter((p) => p.value > 0).reduce((s, p) => s + areaFor(p.dpm - REPLACEMENT_DPM, shareOf(p.minutes, TEAM_MINUTES, p.games)), 0) / PERFECT_TEAM_VALUE, 12);
+    expect(DPM_EXPONENT).toBeGreaterThan(1);
   });
 
   // Two shortcuts were tried and removed: hiding the small shapes (a bad roster
@@ -193,7 +193,7 @@ describe('plate', () => {
     expect(hollow.value).toBe(0);
     expect(hollow.share).toBe(0);
     expect(hollow.deficit).toBeCloseTo(deficitBelowReplacement(-3, 2500, TEAM_MINUTES, 70), 10);
-    expect(polygonArea(hollow.placement!.points)).toBeCloseTo(areaOf(hollow.deficit) / PERFECT_TEAM_VALUE, 10);
+    expect(polygonArea(hollow.placement!.points)).toBeCloseTo(areaFor(REPLACEMENT_DPM - hollow.dpm, shareOf(hollow.minutes, TEAM_MINUTES, hollow.games)) / PERFECT_TEAM_VALUE, 10);
   });
 
   // Inside the box they fought the real shapes for room: on bad teams the
@@ -212,7 +212,7 @@ describe('plate', () => {
   // can be bigger than it. Nothing is shrunk: what does not fit is drawn under it.
   test('a roster bigger than the box overflows under it, largest first, at true size, and nothing shrinks', () => {
     const big = buildRosterShapePlate([
-      player({ nbaId: 1, oDpm: 6, dDpm: 2, minutes: 2900, games: 80 }), // a 2004 Garnett: nearly the whole box alone
+      player({ nbaId: 1, oDpm: 4.5, dDpm: 1.5, minutes: 2900, games: 80 }), // a 2004 Garnett: nearly the whole box alone
       player({ nbaId: 2, oDpm: 3, dDpm: 1, minutes: 2800 }),
       ...[3, 4, 5, 6, 7].map((nbaId) => player({ nbaId, oDpm: 1, dDpm: 0.5, minutes: 2400 })),
     ]);
@@ -240,7 +240,7 @@ describe('plate', () => {
     expect(plate.fitScale).toBe(1);
     for (const p of plate.players) {
       if (!p.placement || p.kind === 'circle') continue;
-      const stands = areaOf(p.display === 'hollow' ? p.deficit : p.value) / PERFECT_TEAM_VALUE;
+      const stands = areaFor(p.display === 'hollow' ? REPLACEMENT_DPM - p.dpm : p.dpm - REPLACEMENT_DPM, shareOf(p.minutes, TEAM_MINUTES, p.games)) / PERFECT_TEAM_VALUE;
       expect(polygonArea(p.placement.points)).toBeCloseTo(stands, 10);
     }
   });

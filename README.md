@@ -54,7 +54,7 @@ That script is the project's only contact with a database, and it is one read-on
 
 | | Source | Meaning |
 |---|---|---|
-| **Area** | `((DPM − replacement) × minutes per game / 48)^1.7` | Value over replacement, to the power his diagrams use; a games floor (50) fades a cameo |
+| **Area** | `(DPM − replacement)^2.2 × (minutes per game / 48)` | How good he is, to a power; times how much he plays; a games floor (50) fades a cameo |
 | **Outline** | the fitted portability model (`data/model.json`) | How well his value stacks: the tier of his portability |
 | **White** | `1 − Σ area` | Exactly what the roster is missing against the perfect team |
 | **Position** | the packer | Nothing. Layout only |
@@ -63,20 +63,20 @@ The white a reader sees is `1 − Σ area` wherever the shapes land, so the arra
 or understate a roster. What the arrangement shows is the video's point: the white collects around the
 awkward shapes.
 
-**Area is superlinear in value, and the share is per game.** His diagrams draw stars far bigger than
-role players — more than linearly — and they size a player by his role, not his availability: a
-log-log fit of the 24 drawn areas in his first three diagrams on value over replacement (free
-intercept per diagram) gives γ = 1.72 with R² 0.76 when the share is minutes per game over 48, and γ =
-1.59 with R² 0.40 when it is his share of the team's season minutes, which had docked Wembanyama a
-third of his size for the 18 games he missed. With linear areas Wembanyama drew at 1.7× Fox although
-his DPM is 3× Fox's; he draws him at 4.5×; this rule draws 3.0×. (Refit on all 41 after the
-Timberwolves and Thunder diagrams came in, the same fit gives γ = 1.20 — those two carry many mid-size
-role players — and a free fit says his sizes track minutes per game even more than DPM, which would
-make Wembanyama SMALLER; 1.7 is kept deliberately, because the stars are the biggest shapes in every
-diagram and that is the reading wanted.) So `area ∝ ((DPM + 2) × mpg/48 × min(1, games/50))^1.7` (`SIZE_EXPONENT`,
-`shareOf`, `GAMES_FULL`): a ten-game cameo is not drawn as a starter, and a roster's shares can sum to
-more than five when players missed time, because the plate is the roster as built. The table still
-prints the linear value.
+**Area is superlinear in how good he is, linear in how much he plays.**
+`area ∝ (DPM + 2)^2.2 × mpg/48 × min(1, games/50)` (`DPM_EXPONENT`, `SHARE_EXPONENT`, `shareOf`,
+`GAMES_FULL`). Three things went into that. The share is PER GAME, not season minutes: a log fit of
+the 24 drawn areas in his first three diagrams on `(DPM + 2) × share` gives R² 0.76 with minutes per
+game and 0.40 with season minutes, which had docked Wembanyama a third of his size for the 18 games
+he missed; a ten-game cameo is not drawn as a starter, and a roster's shares can sum to more than
+five when players missed time, because the plate is the roster as built. The power is on the LEVEL,
+not the product: one power on the product (1.7, that same fit) compressed the top — Wembanyama at
+1.6× Anunoby (his diagrams ~1.9×) and 3.0× Fox (his 4.5×), because a 1.5× edge in value over
+replacement came out at 2× and his fewer minutes took a third back; 2.2 on the level and 1 on the
+share reads 2.2× and 4.3×. And that exponent is a CHOICE, stated as one: refit on all 41 drawn areas
+the pooled power is 1.2, and a free fit says he sizes starters by role (minutes per game) even more
+than by level, which would make Wembanyama SMALLER — but his stars are the biggest shapes in every
+diagram, and that is the reading this chart is for. The table still prints the linear value.
 
 Constants (`src/lib/model.ts`): `REPLACEMENT_DPM = −2`, `PERFECT_TEAM_NET = 8` (the calibrated
 box: five players at +1.6 DPM every minute, drawn to the same power, area 38.8), `BOX_OVER_FULLEST =
