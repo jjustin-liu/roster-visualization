@@ -20,6 +20,7 @@ import {
   type ShapeInput,
 } from './model';
 import { packShapes, placeExtras, type PlacedShape } from './pack';
+import { embed, neighbourShape, neighbourText, shapeFeatures } from './neighbours';
 import { familyOf, fitLabel, flawsOf, outlineFor, portabilityOf, portabilityReason, referenceOutline, FILL_MAX, FLAW_NAMES_OUTLINE, NON_PASSER_NAMES_OUTLINE, PLAYOFF_NAMES_OUTLINE, type PortabilityModel, type StyleFamily } from './portability';
 
 export * from './model';
@@ -239,13 +240,16 @@ export function buildRosterShapePlate(inputs: ShapeInput[], model?: PortabilityM
       const port = portabilityOf(model, lp);
       const flaws = flawsOf(model, lp, season);
       const entry = model.wyman.reference.find((e) => e.name === p.name && e.season === season);
-      const outline = entry ? referenceOutline(entry, Math.max(0, -port.style[0] - 0.5)) : outlineFor(model, port, flaws, p.oDpm + p.dDpm);
+      const interior = Math.max(0, -port.style[0] - 0.5);
+      // Everyone he has not drawn is drawn after the drawn players he most resembles (`neighbours.ts`).
+      const nnShape = !entry && model.nn ? neighbourShape(model.nn, embed(model.nn, shapeFeatures(model, { ...lp, games: p.games }, season))) : null;
+      const outline = entry ? referenceOutline(entry, interior) : nnShape ? referenceOutline({ kind: nnShape.kind, fill: nnShape.fill }, interior) : outlineFor(model, port, flaws, p.oDpm + p.dDpm);
       const way = flaws.oneWay.gross >= FLAW_NAMES_OUTLINE;
       const narrow = flaws.oneSkill.penalty >= FLAW_NAMES_OUTLINE;
       // A cap names a smooth outline only when it is what held the fill down; the playoff cap takes precedence over the non-passer cap when both bind.
       const dropper = flaws.playoff.cap < FILL_MAX - PLAYOFF_NAMES_OUTLINE && outline.fitFill <= flaws.playoff.cap + 1e-9;
       const nonPasser = flaws.nonPasser.t >= NON_PASSER_NAMES_OUTLINE && outline.fitFill <= flaws.nonPasser.cap + 1e-9;
-      const flaw = entry
+      const flaw = entry || nnShape
         ? null
         : outline.kind === 'super'
           ? dropper
@@ -267,7 +271,7 @@ export function buildRosterShapePlate(inputs: ShapeInput[], model?: PortabilityM
                     ? ('one skill' as const)
                     : ('non-passer' as const);
       fitted = { total: port.total, offense: port.offense, defense: port.defense, exponent: outline.param, tiling: outline.fill, family: familyOf(port.style), flaw, reference: entry?.shape ?? null };
-      archetype = { kind: outline.kind, aspect: outline.aspect, label: entry ? `His diagram: ${entry.shape}` : fitLabel(outline.fill), reason: (entry ? 'Drawn as in his Wyman diagram. ' : '') + portabilityReason(port, flaws), estimated: false };
+      archetype = { kind: outline.kind, aspect: outline.aspect, label: entry ? `His diagram: ${entry.shape}` : fitLabel(outline.fill), reason: (entry ? 'Drawn as in his Wyman diagram. ' : nnShape ? `${neighbourText(nnShape)} ` : '') + portabilityReason(port, nnShape ? undefined : flaws), estimated: false };
     }
     return { p, dpm, value, deficit, area, share: value > 0 ? area : 0, archetype, fitted };
   });

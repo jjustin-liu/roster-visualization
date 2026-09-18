@@ -23,6 +23,7 @@
 
 import { exponentForFill, isPointed, POINTS, pointedFill, POINTED_RATIO_MAX, ratioForFill, type PointedKind, type ShapeKind } from './geometry';
 import { REPLACEMENT_DPM } from './model';
+import type { NeighbourModel } from './neighbours';
 
 export const STYLE_COMPONENTS = 4;
 
@@ -127,6 +128,8 @@ export interface PortabilityModel {
   handlingBySeason?: Record<string, { p85: number; p97: number }>;
   /** On-ball creation per 100 among regulars, BY SEASON: the 85th percentile is where a player counts as a primary creator (the non-passer rule). */
   creationBySeason?: Record<string, { p85: number }>;
+  /** The nearest-neighbour shape model over his drawn players (`src/lib/neighbours.ts`). When present it draws every outline. */
+  nn?: NeighbourModel;
   report: {
     lineups: number;
     possessions: number;

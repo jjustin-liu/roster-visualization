@@ -8,6 +8,7 @@ import { FILL_MAX, FILL_MIN, NON_PASSER_FILL, familyOf, flawsOf, outlineFor, por
 import { existsSync, readFileSync } from 'fs';
 import { buildRosterShapePlate, plateLabels, GIANT_OVERHANG } from './index';
 import { attachPlayoffReadings, playoffReadings, EFFICIENCY_K } from './playoffs';
+import { neighbourShape } from './neighbours';
 import type { PlayoffRow } from '../data';
 
 const KINDS: ShapeKind[] = ['square', 'rect', 'octagon', 'hexagon', 'circle', 'pentagon', 'triangle', 'diamond', 'star'];
@@ -635,5 +636,38 @@ describe('reference players', () => {
     const snap2025 = JSON.parse(readFileSync('data/2025.json', 'utf8'));
     const nyk = buildRosterShapePlate(snap2025.players.filter((p: any) => p.team === 'NYK'), model, 2025);
     expect(nyk.players.find((p) => p.name === 'Jalen Brunson')!.reference).toBeNull();
+  });
+});
+
+describe('shapes by nearest neighbour', () => {
+  const model: PortabilityModel = JSON.parse(readFileSync('data/model.json', 'utf8'));
+  const players = JSON.parse(readFileSync('data/2026.json', 'utf8')).players as (ShapeInput & { team: string })[];
+  test('his 41 players are the reference set, and the leave-one-out is stated', () => {
+    expect(model.nn!.reference).toHaveLength(41);
+    expect(model.nn!.k).toBe(6);
+    expect(model.nn!.loo.n).toBe(41);
+    expect(model.nn!.loo.fillR2).toBeGreaterThan(0);
+    expect(model.nn!.loo.within).toBeGreaterThan(0.35);
+  });
+  test('a drawn player is drawn as he drew him; an undrawn player is drawn after his nearest drawn players, and the row says who', () => {
+    const cle = players.filter((p) => p.team === 'CLE');
+    const plate = buildRosterShapePlate(cle, model, 2026, { box: 200 });
+    const mitchell = plate.players.find((p) => p.name === 'Donovan Mitchell')!;
+    expect(mitchell.reference).toBeNull();
+    expect(mitchell.reason).toMatch(/^Drawn after his /);
+    expect(mitchell.flaw).toBeNull();
+    const nyk = buildRosterShapePlate(players.filter((p) => p.team === 'NYK'), model, 2026, { box: 200 });
+    const og = nyk.players.find((p) => p.name === 'OG Anunoby')!;
+    expect(og.reference).toBe('rectangle');
+    expect(og.reason).toMatch(/^Drawn as in his Wyman diagram/);
+  });
+  test('the neighbours vote a family and average a fill; weights sum to one', () => {
+    const z = model.nn!.reference[0].z;
+    const s = neighbourShape(model.nn!, z, (r) => r.name === model.nn!.reference[0].name);
+    expect(s.neighbours).toHaveLength(6);
+    expect(s.neighbours.reduce((a, n) => a + n.weight, 0)).toBeCloseTo(1, 10);
+    expect(s.fill).toBeGreaterThan(0.3);
+    expect(s.fill).toBeLessThanOrEqual(1);
+    expect(s.neighbours.map((n) => n.kind)).toContain(s.kind);
   });
 });

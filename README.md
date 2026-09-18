@@ -96,7 +96,29 @@ so the box moves with the season instead. Each page states what its season's box
 in per-game terms now — five players at 48 minutes a game — so it runs higher than the old
 season-minute figures.
 
-## The outline: measured fit, calibrated to his diagrams
+## The outline: his diagrams as ground truth, everyone else by nearest neighbour
+
+**This is what draws the outlines now** (`src/lib/neighbours.ts`, fitted in `scripts/fit-model.ts`,
+stored as `nn` in `data/model.json`). His 41 drawn players are the ground truth; every other player
+is drawn after the drawn players he most resembles. A player sits in a space of four standardised
+features — O-DPM, D-DPM, assists per unit of on-ball creation (log), minutes per game — scaled over
+every 1,000-minute regular since 2000-01, and his outline is the distance-weighted vote of his six
+nearest reference players (their family) at the distance-weighted mean of their fills, with an
+inverse-distance weight softened by 0.25 so the nearest never takes the whole vote. The row on the
+team page names them ("Drawn after his Anunoby (rectangle, 31%), Bridges (square, 24%)…"). The exact
+polygons he draws (octagon, hexagon, diamond, triangle, stars) come through as themselves; squares,
+trapezoids and notched shapes at the voted fill.
+
+Honestly stated: leave-one-out over the 41 — predict each from the other 40 — gives a fill R² of 14%
+and lands within 0.15 of his fill 44% of the time. That is level with the linear calibration below
+(13%) and the ceiling of every alternative tried: a PCA over all fourteen candidate features (both
+DPMs, the four style components, creation, assists, their ratio, spacing against his season, third-best
+skill, the two playoff readings, minutes per game) predicted his fills WORSE than their mean (−4%), and
+no subset beat the four. His shapes are mostly judgement; the number is the honest ceiling, and the
+page says so. The calibration and the five rules below are kept in the code as the fallback when a
+model has no `nn`, and their reasoning is still what the reference players encode.
+
+### The earlier method: measured fit, calibrated to his diagrams
 
 The first version picked outlines with thresholds I wrote by hand. A PCA of player style was tried next
 and rejected on its own: it measures how UNUSUAL a player is, and unusual is not awkward. The lineup
@@ -160,7 +182,7 @@ perimeter shooter, disruptor/connector, or balanced. It is not a rating.
 each way, all five on the roster), weighted by possessions and centred on that season's league: what
 the combination gains or loses beyond the sum of its players. The page prints it beside the fill.
 
-## Five rules choose the FAMILY of an outline, and they ARE rules
+## Five rules choose the FAMILY of an outline, and they ARE rules (the fallback; the neighbour model supersedes them)
 
 The calibration sets how clean or sharp an outline is; these rules decide which awkward FAMILY a
 flawed player is drawn in (and, for the fourth and fifth, how clean he may be at all), so the plate

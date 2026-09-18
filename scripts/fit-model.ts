@@ -11,6 +11,10 @@
 import { readdirSync, readFileSync, writeFileSync } from 'fs';
 import { ridge, scoreWeights, symmetricEigen, varimax, weightedCorrelation, weightedQuantiles, weightedR2 } from '../src/lib/fit';
 import { estimateCreation, handlingOf, STYLE_STATS, WEAK_END } from '../src/lib/model';
+import { embed, neighbourShape, shapeFeatures, FEATURE_NAMES, FEATURE_USE, NEIGHBOURS_K, type NeighbourModel } from '../src/lib/neighbours';
+import { playoffReadings } from '../src/lib/playoffs';
+import type { PlayoffRow } from '../src/data';
+import { existsSync } from 'fs';
 import { portabilityOf, predictLineup, skillFeatures, skillScores, styleScores, threeMakesPer100, STYLE_COMPONENTS as K, type PortabilityModel, type SideModel, type SkillModel } from '../src/lib/portability';
 import type { LineupRow, SeasonSnapshot } from '../src/data';
 
@@ -41,13 +45,14 @@ interface P {
   /** On-ball creation per 100 (measured, else estimated); null when unknown. */
   creation: number | null;
   assists: number | null;
+  games: number | null;
 }
 const players: P[] = [];
 for (const f of readdirSync('data').filter((x) => /^\d{4}\.json$/.test(x))) {
   const snap: SeasonSnapshot = JSON.parse(readFileSync(`data/${f}`, 'utf8'));
   for (const p of snap.players) {
     if (!p.style) continue;
-    players.push({ team: p.team, id: p.nbaId, season: snap.season, name: p.name, minutes: p.minutes, o: p.oDpm, d: p.dDpm, style: p.style, handling: handlingOf(p), creation: p.creation ?? estimateCreation(p.tsa, p.assists), assists: p.assists });
+    players.push({ team: p.team, id: p.nbaId, season: snap.season, name: p.name, minutes: p.minutes, o: p.oDpm, d: p.dDpm, style: p.style, handling: handlingOf(p), creation: p.creation ?? estimateCreation(p.tsa, p.assists), assists: p.assists, games: p.games });
   }
 }
 
@@ -370,6 +375,52 @@ for (const season of new Set(players.map((p) => p.season))) {
   model.wyman.referenceFills = ref.players.map((r) => r.tiling).sort((a, b) => a - b);
   model.wyman.reference = ref.players.map((r) => ({ name: r.name, season: ref.season, shape: r.shape, kind: r.kind, fill: r.tiling }));
   console.log(`Wyman calibration on his ${labelled.length} shapes: fill ≈ ${beta[0].toFixed(2)} + ${beta[1].toFixed(3)} × fit-without-on-ball + ${beta[2].toFixed(3)} × DPM; leave-one-out R² ${(model.wyman.looR2 * 100).toFixed(0)}%`);
+}
+
+// ── Shapes by nearest neighbour: his 41 drawn players as ground truth ──────
+{
+  const readings = existsSync('data/playoffs.json') ? playoffReadings(JSON.parse(readFileSync('data/playoffs.json', 'utf8')) as PlayoffRow[]) : new Map();
+  const asFeaturePlayer = (p: P) => {
+    const r = readings.get(`${p.season}:${p.id}`);
+    return { ...asLineupPlayer(p), games: p.games, playoff: r ? { dpmDelta: r.dpmDelta, shareScale: r.shareScale } : null };
+  };
+  const regulars = players.filter((p) => p.minutes >= 1000);
+  const X = regulars.map((p) => shapeFeatures(model, asFeaturePlayer(p), p.season));
+  const F = X[0].length;
+  const mean = Array.from({ length: F }, (_, j) => X.reduce((a, x) => a + x[j], 0) / X.length);
+  const sd = Array.from({ length: F }, (_, j) => Math.sqrt(X.reduce((a, x) => a + (x[j] - mean[j]) ** 2, 0) / X.length));
+  // The space: the chosen features, standardised (see FEATURE_USE for why not a
+  // PCA of all of them — it was tried, and predicted his fills worse than chance).
+  const K = FEATURE_USE.length;
+  const nn: NeighbourModel = {
+    featureNames: [...FEATURE_NAMES],
+    mean,
+    sd,
+    components: FEATURE_USE.map((j) => Array.from({ length: F }, (_, i) => (i === j ? 1 : 0))),
+    explained: FEATURE_USE.map(() => 1 / K),
+    k: NEIGHBOURS_K,
+    reference: [],
+    loo: { fillR2: 0, within: 0, n: 0 },
+  };
+  const acc = 1;
+  const ref: { season: number; players: { name: string; tiling: number; shape: string; kind: NeighbourModel['reference'][number]['kind'] }[] } = JSON.parse(readFileSync('data/wyman-reference.json', 'utf8'));
+  for (const r of ref.players) {
+    const p = players.find((x) => x.name === r.name && x.season === ref.season)!;
+    nn.reference.push({ name: r.name, season: ref.season, shape: r.shape, kind: r.kind, tiling: r.tiling, z: embed(nn, shapeFeatures(model, asFeaturePlayer(p), p.season)) });
+  }
+  // Leave-one-out: each drawn player predicted from the other 40.
+  const ys = nn.reference.map((r) => r.tiling);
+  const my = ys.reduce((a, b) => a + b, 0) / ys.length;
+  let sse = 0;
+  let within = 0;
+  for (const r of nn.reference) {
+    const pred = neighbourShape(nn, r.z, (o) => o.name === r.name);
+    sse += (pred.fill - r.tiling) ** 2;
+    if (Math.abs(pred.fill - r.tiling) <= 0.15) within++;
+  }
+  nn.loo = { fillR2: 1 - sse / ys.reduce((a, y) => a + (y - my) ** 2, 0), within: within / ys.length, n: ys.length };
+  model.nn = nn;
+  console.log(`Nearest-neighbour shapes: ${K} of ${F} features (${FEATURE_USE.map((j) => FEATURE_NAMES[j]).join(', ')}), standardised over ${regulars.length} regulars, k = ${NEIGHBOURS_K}; leave-one-out over his ${ys.length} players: fill R² ${(nn.loo.fillR2 * 100).toFixed(0)}%, ${(nn.loo.within * 100).toFixed(0)}% within 0.15 of his fill.${acc ? '' : ''}`);
 }
 
 const sw = rows.reduce((s, r) => s + r.w, 0);
