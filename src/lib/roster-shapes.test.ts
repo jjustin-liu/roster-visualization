@@ -505,6 +505,9 @@ describe('non-spacer', () => {
   });
   test('a big is not expected to space, and a shooter is not a non-spacer', () => {
     expect(flawsOf(model, lp('Mitchell Robinson'), 2026).spacing.z).toBeNull();
+    // Jokić passes like a guard, so the style score does not read him as interior; his position does.
+    const jokic = players.find((x) => x.name === 'Nikola Jokić')!;
+    expect(flawsOf(model, { ...lp('Nikola Jokić'), position: jokic.position }, 2026).spacing.z).toBeNull();
     expect(flawsOf(model, lp('Landry Shamet'), 2026).spacing.penalty).toBe(0);
   });
 });
@@ -514,9 +517,9 @@ describe('playoff reading', () => {
   const readings = playoffReadings(rows);
   const players = JSON.parse(readFileSync('data/2026.json', 'utf8')).players as (ShapeInput & { team: string })[];
   const of = (name: string, season = 2026) => readings.get(`${season}:${players.find((x) => x.name === name)!.nbaId}`);
-  test('Harden and Mitchell give back offense; Vanderbilt loses his minutes and his shot; Kawhi rises; stars play more', () => {
-    expect(of('James Harden')!.dpmDelta).toBeLessThan(0);
-    expect(of('Donovan Mitchell')!.dpmDelta).toBeLessThan(0);
+  test('the value reading is against a player of his level: Jokić is no dropper for regressing from a +7; Vanderbilt loses his minutes and his shot; Kawhi rises', () => {
+    expect(of('Nikola Jokić')!.dpmDelta).toBeGreaterThan(-0.3);
+    expect(of('Nikola Jokić')!.rawEfficiency).toBeLessThan(-1); // beyond the league's drop alone he would read as one
     expect(of('Jarred Vanderbilt')!.shareScale).toBeLessThan(0.9);
     expect(of('Jarred Vanderbilt')!.dpmDelta).toBeLessThan(-0.5);
     expect(of('Kawhi Leonard')!.dpmDelta).toBeGreaterThan(0.5);

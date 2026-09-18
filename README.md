@@ -179,7 +179,8 @@ fixed cut flagged 59% of regulars), so the rule is percentile-based and graded: 
 of regulars (0.13 SD), the full penalty at the 5th percentile (−0.40). 16% of regulars; both at once 12%.
 
 **Non-spacer** — "he is a non spacer, so there's a little bit of off-ball problems" (Castle, Fox). A
-perimeter player (interior score under 0.5; a big is not expected to space) whose three-point makes
+perimeter player (interior score under 0.5 and not a listed center — the style score reads Jokić as
+a guard, because he passes like one, and had him notched for 1.5 threes per 100) whose three-point makes
 per 100 sit more than half a standard deviation below perimeter regulars OF HIS OWN SEASON — league
 three-point volume doubled over these 26 years (1.5 → 3.0 makes per 100), so an all-seasons scale
 flagged nobody. Worth at most 0.08 of fill, about the size of the bite his Castle has out of it, and on
@@ -351,7 +352,12 @@ the player's OWN regular season, from `data/playoffs.json` (both phases of every
   value that made every contender's plate half again as big and forced the season's box up. The
   reading is who cannot be played, not who plays more.
 
-Size: `(DPM + offense change + 2) × per-game share × playability`, to the power. Shape: the share
+The offense change that moves his value is measured **against a player of his level** (a per-season
+weighted line of the change on regular-season level), not against the league alone: the best regular
+seasons give back the most in May because they carried the most luck, and measured against the league
+the rule tagged Jokić as a playoff dropper for regressing from a +7 (−2.2 beyond the league's drop;
++0.6 against his level). The row prints both. Size: `(DPM + offense change + 2) × per-game share ×
+playability`, to the power. Shape: the share
 of his regular-season value that survives caps how cleanly he can be drawn — `cap = 0.985 − 0.5 ×
 (1 − survives)`, so a man worth 60% of himself in May is at best a circle, 30% at best a hexagon —
 and a player whose playoff minutes share falls under ×0.7 is drawn as a burst, the most awkward
@@ -360,11 +366,9 @@ readings are pooled over the player's career TO DATE, including the season drawn
 happened), with a recency half-life of three seasons, and shrunk toward "no change" by the
 recency-weighted playoff minutes behind them (`K` = 600 minutes for offense, 300 for playability),
 so one bad series does not follow a man for a decade and a player with no postseason is his
-regular-season self. The row also prints his offense change against what a player of HIS LEVEL gives
-back (a per-season weighted line of the change on regular-season level), because the best offensive
-players regress the most in the playoffs; by that yardstick Harden's and Mitchell's recent playoff
-drops are ordinary for stars, and the page says so rather than hiding it. Reference players from his
-diagrams keep his shapes.
+regular-season self. By the level yardstick Harden's and Mitchell's recent playoff drops are ordinary
+for stars, so neither is tagged a dropper; the page prints the numbers rather than hiding them.
+Reference players from his diagrams keep his shapes.
 
 Not used: DPM itself has no playoff version (the source copies the season's number onto the playoff
 row), and single-postseason plus-minus is too confounded by opponent quality to read one player from.

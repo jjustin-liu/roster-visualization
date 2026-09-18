@@ -177,7 +177,11 @@ export function playoffReadings(rows: PlayoffRow[]): Map<string, PlayoffReading>
       const rawPlayability = Math.exp(playSum / playW);
       const offWeight = minutes / (minutes + EFFICIENCY_K);
       const playWeight = minutes / (minutes + PLAYABILITY_K);
-      const dpmDelta = Math.max(-EFFICIENCY_CAP, Math.min(EFFICIENCY_CAP, rawEfficiency)) * offWeight;
+      // The value reading is the drop AGAINST A PLAYER OF HIS LEVEL, not the
+      // league's: measured beyond the league's drop alone, the best regular
+      // seasons give back the most in May (they carried the most luck) and the
+      // rule tagged Jokić as a dropper for regressing from a +7.
+      const dpmDelta = Math.max(-EFFICIENCY_CAP, Math.min(EFFICIENCY_CAP, vsLevel)) * offWeight;
       const shareScale = Math.exp(Math.log(Math.max(PLAYABILITY_MIN, Math.min(PLAYABILITY_MAX, rawPlayability))) * playWeight);
       out.set(`${season}:${id}`, { dpmDelta, shareScale, minutes, postseasons: list.length, rawEfficiency, rawPlayability, vsLevel: vsLevel * offWeight });
     }
@@ -224,7 +228,7 @@ export function attachPlayoffReadings<T extends { nbaId: number; playoff?: { dpm
 export function playoffReadingText(r: PlayoffReading): string {
   if (r.postseasons === 0) return 'No postseason on record: drawn as in the regular season.';
   const signed = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(x).toFixed(1)}`;
-  const eff = `${signed(r.dpmDelta)} per 100 on offense beyond the league's playoff drop (${signed(r.vsLevel)} against a player of his level)`;
+  const eff = `${signed(r.dpmDelta)} per 100 on offense against a player of his level (${signed(r.rawEfficiency * (r.minutes / (r.minutes + EFFICIENCY_K)))} beyond the league's playoff drop)`;
   const play = `minutes share ×${r.shareScale.toFixed(2)}`;
   return `${eff}, ${play}, from ${r.postseasons} postseason${r.postseasons === 1 ? '' : 's'} (${Math.round(r.minutes).toLocaleString()} playoff minutes, recent ones weighted most).`;
 }

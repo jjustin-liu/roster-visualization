@@ -154,6 +154,8 @@ export interface LineupPlayer {
   handling?: number | null;
   /** His playoff reading (`src/lib/playoffs.ts`), for the playoff rule. Null or absent: the rule abstains. */
   playoff?: { dpmDelta: number; shareScale: number } | null;
+  /** Listed position; a center is never asked to space the floor. */
+  position?: string | null;
 }
 
 /**
@@ -427,7 +429,9 @@ export function flawsOf(model: PortabilityModel, p: LineupPlayer, season?: numbe
   const oneSkill = ONE_SKILL_MAX_PENALTY * clamp01((model.skill.thirdBestMedian - thirdBest) / (model.skill.thirdBestMedian - model.skill.thirdBestLow));
 
   const style = styleScores(model, p.style, p.minutes);
-  const perimeter = -style[0] < 0.5;
+  // A center is never asked to space: the style score reads Jokić as a guard
+  // (he passes like one) and had him notched for 1.5 threes per 100.
+  const perimeter = -style[0] < 0.5 && !/C/.test(p.position ?? '');
   const scale = spacingScale(model, season);
   const zSpacing = perimeter && scale ? (threeMakesPer100(p.style) - scale.mean) / scale.sd : null;
   const spacing = zSpacing === null ? 0 : SPACING_MAX_PENALTY * clamp01((-0.5 - zSpacing) / 1.0);

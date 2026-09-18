@@ -228,7 +228,7 @@ export function buildRosterShapePlate(inputs: ShapeInput[], model?: PortabilityM
     let archetype = classify(p);
     let fitted: { total: number; offense: number; defense: number; exponent: number; tiling: number; family: StyleFamily; flaw: RosterShapePlayer['flaw']; reference: string | null } | null = null;
     if (model && p.style) {
-      const lp = { style: p.style, minutes: p.minutes, oDpm: p.oDpm, dDpm: p.dDpm, handling: handlingOf(p), playoff: p.playoff ?? null };
+      const lp = { style: p.style, minutes: p.minutes, oDpm: p.oDpm, dDpm: p.dDpm, handling: handlingOf(p), playoff: p.playoff ?? null, position: p.position };
       const port = portabilityOf(model, lp);
       const flaws = flawsOf(model, lp, season);
       const entry = model.wyman.reference.find((e) => e.name === p.name && e.season === season);
