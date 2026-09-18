@@ -349,6 +349,8 @@ export const NON_PASSER_FILL = 0.5;
 /** Assists per unit of on-ball creation between which the non-passer reading fades in (full at or below the first). */
 export const NON_PASSER_FULL = 0.32;
 export const NON_PASSER_FROM = 0.42;
+/** The reading names the outline (tag and text) only from here up; SGA at 0.41 assists per unit of creation is a tenth of the way in and is not called a non-passer. */
+export const NON_PASSER_NAMES_OUTLINE = 0.5;
 /**
  * PLAYOFFS  "he's a playoff dropper" / "you can't play him in the playoffs"
  *   The playoff reading (see `src/lib/playoffs.ts`) already sets his SIZE:
@@ -581,7 +583,7 @@ export function portabilityReason(port: Portability, flaws?: Flaws): string {
   if (flaws && flaws.oneWay.gross >= FLAW_NAMES_OUTLINE) text += `. One-way: ${flaws.oneWay.end} is the hole (${signedText(flaws.oneWay.weakEnd)})`;
   if (flaws && flaws.oneSkill.penalty >= FLAW_NAMES_OUTLINE) text += `. Narrow: ${flaws.oneSkill.best.length ? flaws.oneSkill.best.join(' and ') : 'no standout skill'}, little else`;
   if (flaws && flaws.spacing.penalty >= NOTCH_NAMES_OUTLINE) text += `. Non-spacer: ${threeMakesPer100Text(flaws.spacing.z)}`;
-  if (flaws && flaws.nonPasser.t > 0 && flaws.nonPasser.ratio !== null) text += `. Non-passer: a primary creator with ${flaws.nonPasser.ratio.toFixed(2)} assists per unit of on-ball creation${flaws.nonPasser.t >= 0.5 ? ', rough to build around' : ''}`;
+  if (flaws && flaws.nonPasser.t >= NON_PASSER_NAMES_OUTLINE && flaws.nonPasser.ratio !== null) text += `. Non-passer: a primary creator with ${flaws.nonPasser.ratio.toFixed(2)} assists per unit of on-ball creation, rough to build around`;
   if (flaws && flaws.playoff.unplayable) text += `. Hard to play in the playoffs: his minutes share falls to ×${(flaws.playoff.survives > 0 ? flaws.playoff.survives : 0).toFixed(2)} of his regular-season self`;
   else if (flaws && flaws.playoff.cap < FILL_MAX - PLAYOFF_NAMES_OUTLINE) text += `. Playoff dropper: ${Math.round(flaws.playoff.survives * 100)}% of his regular-season value survives the playoffs`;
   return text;

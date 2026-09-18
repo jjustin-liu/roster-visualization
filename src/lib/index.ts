@@ -19,7 +19,7 @@ import {
   type ShapeInput,
 } from './model';
 import { packShapes, placeExtras, type PlacedShape } from './pack';
-import { familyOf, fitLabel, flawsOf, outlineFor, portabilityOf, portabilityReason, referenceOutline, FILL_MAX, FLAW_NAMES_OUTLINE, PLAYOFF_NAMES_OUTLINE, type PortabilityModel, type StyleFamily } from './portability';
+import { familyOf, fitLabel, flawsOf, outlineFor, portabilityOf, portabilityReason, referenceOutline, FILL_MAX, FLAW_NAMES_OUTLINE, NON_PASSER_NAMES_OUTLINE, PLAYOFF_NAMES_OUTLINE, type PortabilityModel, type StyleFamily } from './portability';
 
 export * from './model';
 
@@ -238,7 +238,7 @@ export function buildRosterShapePlate(inputs: ShapeInput[], model?: PortabilityM
       const narrow = flaws.oneSkill.penalty >= FLAW_NAMES_OUTLINE;
       // A cap names a smooth outline only when it is what held the fill down; the playoff cap takes precedence over the non-passer cap when both bind.
       const dropper = flaws.playoff.cap < FILL_MAX - PLAYOFF_NAMES_OUTLINE && outline.fitFill <= flaws.playoff.cap + 1e-9;
-      const nonPasser = flaws.nonPasser.t > 0 && outline.fitFill <= flaws.nonPasser.cap + 1e-9;
+      const nonPasser = flaws.nonPasser.t >= NON_PASSER_NAMES_OUTLINE && outline.fitFill <= flaws.nonPasser.cap + 1e-9;
       const flaw = entry
         ? null
         : outline.kind === 'super'
