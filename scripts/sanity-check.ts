@@ -29,6 +29,27 @@ const HIS: Record<string, [name: string, shape: string, areaPct: number, tiling:
   ],
   // Measured from the posted image by GEOMETRY (rectangles, a triangle, a trapezoid; estimated fills for
   // the two stars), not by pixel count, so these are good to a few percent. Box ≈ 725 × 665 px.
+  'Timberwolves, his 2026-27 roster (~57% full, estimated)': [
+    ['Anthony Edwards', 'diamond', 31.4, 0.5],
+    ['LaMelo Ball', 'hexagon', 24.9, 0.75],
+    ['Rudy Gobert', 'notched long rectangle', 17.9, 0.9],
+    ['Jaden McDaniels', 'arrow rectangle', 9.9, 0.85],
+    ['Donte DiVincenzo', 'square', 6.6, 1.0],
+    ['Ayo Dosunmu', 'notched square', 5.5, 0.9],
+    ['Jonathan Kuminga', '4-point star', 3.0, 0.32],
+    ['Bones Hyland', '5-point star', 0.9, 0.35],
+  ],
+  'Thunder, his 2026-27 roster (~76% full, estimated)': [
+    ['Shai Gilgeous-Alexander', 'rectangle', 39.5, 1.0],
+    ['Jalen Williams', 'octagon', 15.1, 0.83],
+    ['Chet Holmgren', 'hexagon with bites', 14.0, 0.6],
+    ['Isaiah Hartenstein', 'round-topped rectangle', 7.4, 0.8],
+    ['Alex Caruso', 'trapezoid', 6.7, 0.75],
+    ['Ajay Mitchell', 'rectangle', 5.9, 1.0],
+    ['Jaylin Williams', 'hexagon', 5.2, 0.75],
+    ['Cason Wallace', 'parallelogram', 3.6, 0.7],
+    ['Jared McCain', 'triangle', 2.5, 0.5],
+  ],
   'Spurs, his 2026-27 roster (~76% full, estimated)': [
     ['Victor Wembanyama', 'square', 29.1, 1.0],
     ['Stephon Castle', 'notched rectangle', 12.5, 0.93],

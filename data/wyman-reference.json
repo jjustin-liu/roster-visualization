@@ -1,5 +1,5 @@
 {
-  "note": "Taylormetrics' three Wyman diagrams, measured: how much of its bounding box each of his shapes fills. Knicks and Lakers from video frames by pixel count; Spurs from the posted image by geometry. All players scored on their 2025-26 rows. `kind` is the outline this project draws for it: the exact polygon where one exists (circle, octagon, hexagon, pentagon, triangle, diamond, four-point star), otherwise the nearest family (smooth for squares, rectangles, parallelograms and trapezoids; penta for the five-point star; burst for clouds, bursts, blobs and the six-point star; notched for his notched rectangle).",
+  "note": "Taylormetrics' three Wyman diagrams, measured: how much of its bounding box each of his shapes fills. Knicks and Lakers from video frames by pixel count; Spurs from the posted image by geometry. All players scored on their 2025-26 rows. `kind` is the outline this project draws for it: the exact polygon where one exists (circle, octagon, hexagon, pentagon, triangle, diamond, four-point star), otherwise the nearest family (smooth for squares, rectangles, parallelograms and trapezoids; penta for the five-point star; burst for clouds, bursts, blobs and the six-point star; notched for his notched rectangle). Timberwolves and Thunder (his 2026-27 rosters) measured from the posted images by geometry.",
   "season": 2026,
   "players": [
     {
@@ -17,7 +17,7 @@
     {
       "name": "OG Anunoby",
       "shape": "rectangle",
-      "tiling": 1.0,
+      "tiling": 1,
       "kind": "super"
     },
     {
@@ -65,7 +65,7 @@
     {
       "name": "Walker Kessler",
       "shape": "square",
-      "tiling": 1.0,
+      "tiling": 1,
       "kind": "super"
     },
     {
@@ -101,7 +101,7 @@
     {
       "name": "Victor Wembanyama",
       "shape": "square",
-      "tiling": 1.0,
+      "tiling": 1,
       "kind": "super"
     },
     {
@@ -113,7 +113,7 @@
     {
       "name": "Dylan Harper",
       "shape": "square",
-      "tiling": 1.0,
+      "tiling": 1,
       "kind": "super"
     },
     {
@@ -125,7 +125,7 @@
     {
       "name": "Julian Champagnie",
       "shape": "square",
-      "tiling": 1.0,
+      "tiling": 1,
       "kind": "super"
     },
     {
@@ -145,6 +145,108 @@
       "shape": "6-point star",
       "tiling": 0.55,
       "kind": "burst"
+    },
+    {
+      "name": "Anthony Edwards",
+      "shape": "diamond",
+      "tiling": 0.5,
+      "kind": "diamond"
+    },
+    {
+      "name": "LaMelo Ball",
+      "shape": "hexagon",
+      "tiling": 0.75,
+      "kind": "hexagon"
+    },
+    {
+      "name": "Rudy Gobert",
+      "shape": "notched long rectangle",
+      "tiling": 0.9,
+      "kind": "notched"
+    },
+    {
+      "name": "Jaden McDaniels",
+      "shape": "arrow rectangle",
+      "tiling": 0.85,
+      "kind": "super"
+    },
+    {
+      "name": "Ayo Dosunmu",
+      "shape": "notched square",
+      "tiling": 0.9,
+      "kind": "notched"
+    },
+    {
+      "name": "Jonathan Kuminga",
+      "shape": "4-point star",
+      "tiling": 0.32,
+      "kind": "star"
+    },
+    {
+      "name": "Bones Hyland",
+      "shape": "5-point star",
+      "tiling": 0.35,
+      "kind": "penta"
+    },
+    {
+      "name": "Donte DiVincenzo",
+      "shape": "square",
+      "tiling": 1,
+      "kind": "super"
+    },
+    {
+      "name": "Shai Gilgeous-Alexander",
+      "shape": "rectangle",
+      "tiling": 1,
+      "kind": "super"
+    },
+    {
+      "name": "Jalen Williams",
+      "shape": "octagon",
+      "tiling": 0.83,
+      "kind": "octagon"
+    },
+    {
+      "name": "Chet Holmgren",
+      "shape": "hexagon with bites",
+      "tiling": 0.6,
+      "kind": "hexagon"
+    },
+    {
+      "name": "Isaiah Hartenstein",
+      "shape": "round-topped rectangle",
+      "tiling": 0.8,
+      "kind": "super"
+    },
+    {
+      "name": "Alex Caruso",
+      "shape": "trapezoid",
+      "tiling": 0.75,
+      "kind": "super"
+    },
+    {
+      "name": "Jaylin Williams",
+      "shape": "hexagon",
+      "tiling": 0.75,
+      "kind": "hexagon"
+    },
+    {
+      "name": "Cason Wallace",
+      "shape": "parallelogram",
+      "tiling": 0.7,
+      "kind": "super"
+    },
+    {
+      "name": "Ajay Mitchell",
+      "shape": "rectangle",
+      "tiling": 1,
+      "kind": "super"
+    },
+    {
+      "name": "Jared McCain",
+      "shape": "triangle",
+      "tiling": 0.5,
+      "kind": "triangle"
     }
   ]
 }

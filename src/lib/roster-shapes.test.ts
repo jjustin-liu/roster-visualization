@@ -4,7 +4,7 @@ import { areaOf, classify, deficitBelowReplacement, estimateCreation, handlingOf
 import { packShapes, placeExtras } from './pack';
 import { franchiseOf, teamName } from '../teams';
 import { ridge, solve, symmetricEigen, varimax, weightedQuantiles } from './fit';
-import { FILL_MAX, FILL_MIN, ON_BALL_FILL_CAP, familyOf, flawsOf, outlineFor, portabilityOf, predictLineup, skillScores, type PortabilityModel } from './portability';
+import { FILL_MAX, FILL_MIN, NON_PASSER_FILL, familyOf, flawsOf, outlineFor, portabilityOf, predictLineup, skillScores, type PortabilityModel } from './portability';
 import { existsSync, readFileSync } from 'fs';
 import { buildRosterShapePlate, plateLabels, GIANT_OVERHANG } from './index';
 import { attachPlayoffReadings, playoffReadings, EFFICIENCY_K } from './playoffs';
@@ -561,28 +561,30 @@ describe('playoff reading', () => {
   });
 });
 
-describe('on-ball', () => {
+describe('non-passer', () => {
   const model: PortabilityModel = JSON.parse(readFileSync('data/model.json', 'utf8'));
   const players = JSON.parse(readFileSync('data/2026.json', 'utf8')).players as (ShapeInput & { team: string })[];
-  const lp = (name: string) => { const p = players.find((x) => x.name === name)!; return { style: p.style!, minutes: p.minutes, oDpm: p.oDpm, dDpm: p.dDpm, handling: handlingOf(p) }; };
+  const lp = (name: string) => { const p = players.find((x) => x.name === name)!; return { style: p.style!, minutes: p.minutes, oDpm: p.oDpm, dDpm: p.dDpm, creation: p.creation, assists: p.assists }; };
   const outline = (name: string) => { const p = lp(name); return outlineFor(model, portabilityOf(model, p), flawsOf(model, p, 2026), p.oDpm + p.dDpm); };
-  test('an engine is never a square: Harden and Mitchell are capped at his Dončić octagon', () => {
-    for (const n of ['James Harden', 'Donovan Mitchell', 'Luka Dončić', 'Nikola Jokić']) {
-      expect(outline(n).fill).toBeLessThan(0.93);
-      expect(flawsOf(model, lp(n), 2026).onBall.cap).toBeLessThanOrEqual(ON_BALL_FILL_CAP + 0.1);
+  test('a primary creator who does not pass is his Edwards diamond; one who does is not touched', () => {
+    const ant = flawsOf(model, lp('Anthony Edwards'), 2026).nonPasser;
+    expect(ant.t).toBe(1);
+    expect(ant.cap).toBeCloseTo(NON_PASSER_FILL, 6);
+    expect(outline('Anthony Edwards').kind).toBe('quad');
+    expect(outline('Anthony Edwards').fill).toBeCloseTo(0.5, 1);
+    // SGA carries the biggest on-ball load in the league and is drawn as a full rectangle: he passes.
+    for (const n of ['Shai Gilgeous-Alexander', 'James Harden', 'Nikola Jokić', 'LaMelo Ball']) {
+      expect(flawsOf(model, lp(n), 2026).nonPasser.t).toBeLessThan(0.15);
     }
-    expect(outline('James Harden').fill).toBeCloseTo(ON_BALL_FILL_CAP, 2);
+    expect(outline('Shai Gilgeous-Alexander').fill).toBeGreaterThan(0.93);
   });
-  test('it reads playmaking load, not usage: a high-usage big who does not run the offense stays square', () => {
-    for (const n of ['Victor Wembanyama', 'Karl-Anthony Towns', 'Jalen Duren']) {
-      expect(flawsOf(model, lp(n), 2026).onBall.cap).toBe(FILL_MAX);
-      expect(outline(n).fill).toBeGreaterThan(0.93);
-    }
+  test('it only reads primary creators: a low-creation player with few assists is not a non-passer', () => {
+    for (const n of ['Victor Wembanyama', 'Jalen Duren', 'Mitchell Robinson']) expect(flawsOf(model, lp(n), 2026).nonPasser.t).toBe(0);
   });
   test('the rule abstains without the numbers, and is scaled to the season', () => {
-    expect(flawsOf(model, { ...lp('James Harden'), handling: null }, 2026).onBall.cap).toBe(FILL_MAX);
-    expect(model.handlingBySeason!['2001'].p97).toBeGreaterThan(model.handlingBySeason!['2001'].p85);
-    expect(Object.keys(model.handlingBySeason!).length).toBeGreaterThanOrEqual(26);
+    expect(flawsOf(model, { ...lp('Anthony Edwards'), creation: null }, 2026).nonPasser.cap).toBe(FILL_MAX);
+    expect(model.creationBySeason!['2001'].p85).toBeGreaterThan(0);
+    expect(Object.keys(model.creationBySeason!).length).toBeGreaterThanOrEqual(26);
   });
   test('the notch is cut to the exact area and fills 1 − depth/2 of its box', () => {
     const pts = shapePolygon('notched', 0.06, 1.2, 0, 0.3);
@@ -614,7 +616,7 @@ describe('reference players', () => {
   const model: PortabilityModel = JSON.parse(readFileSync('data/model.json', 'utf8'));
   const snap = JSON.parse(readFileSync('data/2026.json', 'utf8'));
   const plate = (team: string) => buildRosterShapePlate(snap.players.filter((p: any) => p.team === team), model, 2026);
-  test('the 24 players in his diagrams are drawn as he drew them, and say so', () => {
+  test('the 41 players in his diagrams are drawn as he drew them, and say so', () => {
     const nyk = plate('NYK');
     const brunson = nyk.players.find((p) => p.name === 'Jalen Brunson')!;
     expect(brunson.reference).toBe('pentagon');

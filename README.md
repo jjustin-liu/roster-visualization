@@ -63,13 +63,17 @@ The white a reader sees is `1 − Σ area` wherever the shapes land, so the arra
 or understate a roster. What the arrangement shows is the video's point: the white collects around the
 awkward shapes.
 
-**Area is superlinear in value, and the share is per game.** His three diagrams draw stars far bigger
-than role players — more than linearly — and they size a player by his role, not his availability: a
-log-log fit of his 24 drawn areas on value over replacement (free intercept per diagram) gives γ = 1.72
-with R² 0.76 when the share is minutes per game over 48, and γ = 1.59 with R² 0.40 when it is his share
-of the team's season minutes, which had docked Wembanyama a third of his size for the 18 games he
-missed. With linear areas Wembanyama drew at 1.7× Fox although his DPM is 3× Fox's; he draws him at
-4.5×; this rule draws 3.0×. So `area ∝ ((DPM + 2) × mpg/48 × min(1, games/50))^1.7` (`SIZE_EXPONENT`,
+**Area is superlinear in value, and the share is per game.** His diagrams draw stars far bigger than
+role players — more than linearly — and they size a player by his role, not his availability: a
+log-log fit of the 24 drawn areas in his first three diagrams on value over replacement (free
+intercept per diagram) gives γ = 1.72 with R² 0.76 when the share is minutes per game over 48, and γ =
+1.59 with R² 0.40 when it is his share of the team's season minutes, which had docked Wembanyama a
+third of his size for the 18 games he missed. With linear areas Wembanyama drew at 1.7× Fox although
+his DPM is 3× Fox's; he draws him at 4.5×; this rule draws 3.0×. (Refit on all 41 after the
+Timberwolves and Thunder diagrams came in, the same fit gives γ = 1.20 — those two carry many mid-size
+role players — and a free fit says his sizes track minutes per game even more than DPM, which would
+make Wembanyama SMALLER; 1.7 is kept deliberately, because the stars are the biggest shapes in every
+diagram and that is the reading wanted.) So `area ∝ ((DPM + 2) × mpg/48 × min(1, games/50))^1.7` (`SIZE_EXPONENT`,
 `shareOf`, `GAMES_FULL`): a ten-game cameo is not drawn as a starter, and a roster's shares can sum to
 more than five when players missed time, because the plate is the roster as built. The table still
 prints the linear value.
@@ -96,8 +100,9 @@ season-minute figures.
 
 The first version picked outlines with thresholds I wrote by hand. A PCA of player style was tried next
 and rejected on its own: it measures how UNUSUAL a player is, and unusual is not awkward. The lineup
-model below measures FIT directly. And the final step calibrates the outline to the three diagrams he
-has drawn, because those are the reference for what this chart means.
+model below measures FIT directly. And the final step calibrates the outline to the five diagrams he
+has drawn (Knicks, Lakers, Spurs, Timberwolves, Thunder; 41 players), because those are the reference
+for what this chart means.
 
 **The lineup model** (`scripts/fit-model.ts` → `data/model.json`, scored by `src/lib/portability.ts`):
 
@@ -119,7 +124,7 @@ has drawn, because those are the reference for what this chart means.
    team-seasons. Real and small.
 
 **The Wyman calibration** (`data/wyman-reference.json`). His Knicks, Lakers and Spurs diagrams were
-measured — how much of its bounding box each of his 24 shapes fills — and used as labels. Two things
+measured — how much of its bounding box each of his 41 shapes fills — and used as labels. Two things
 predict his shapes about equally, and nothing else does better: the measured Fit **with its on-ball
 term removed**, and plain quality (DPM). On-ball load, as the lineup model measures it (a usage
 component), has no relation to the outlines he draws (r = +0.13) while it had dominated ours, rounding
@@ -129,10 +134,10 @@ good players cleaner ("the bigger the shape, the better the player… a square
 is really easy to build around"). So `score = 0.129 × fit-without-on-ball + 0.060 × DPM`; a player's
 score is ranked among 1,000+ minute regulars and that percentile is mapped onto the distribution of
 fills he draws, so a league of plates has his mix (about a quarter perfect squares, a fifth stars).
-Leave-one-out R² on his 24 players is **15%**. His shapes are only weakly predictable from stats — that
+Leave-one-out R² on his 41 players is **13%**. His shapes are only weakly predictable from stats — that
 is the honest number, and it is the ceiling of any formula on 24 hand-drawn examples.
 
-**The 24 reference players are drawn as he drew them.** They are the baseline this chart is calibrated
+**The 41 reference players are drawn as he drew them.** They are the baseline this chart is calibrated
 to, so on the 2025-26 Knicks, Lakers and Spurs pages (and wherever else a reference player turns up
 that season) the outline is his: an exact polygon where one exists (circle, octagon, hexagon,
 pentagon, triangle, diamond, four-point star), otherwise the nearest family (smooth for his squares,
@@ -189,16 +194,18 @@ get the notch; more get the penalty inside another shape. Lineup support is weak
 costs ~0.6 per 100, t = −2.5). By our numbers Castle and Harper are non-spacers; Fox is not (2.8 threes
 per 100 is average).
 
-**On-ball** — the roster is built around him; he is not a piece you plug in. He draws no primary
-ball-handler as a square: Dončić is an octagon (0.83), Brunson a pentagon, Reaves a diamond — while
-Wembanyama, Towns and Duren, big usage but little handling, are squares and a circle. So the reading is
-PLAYMAKING load, on-ball creation plus assists per 100 (creation estimated from usage and assists
-before 2013-14, when it starts being measured), against regulars OF HIS OWN SEASON
-(`handlingBySeason`): nothing at the 85th percentile, and from the 97th up the outline is capped at
-his Dončić octagon, never a square. The cap only lowers the fill; the other rules still choose the
-family. The calibration alone had drawn Harden and Mitchell as perfect squares (on-ball load did not
-predict his 24 fills, so it was left out of the outline) — this rule is the correction: Harden reads
-0.83, Mitchell 0.86, Jokić 0.83, Wembanyama still 0.98.
+**Non-passer** — "his passing volume is not high enough… this diamond is a little bit rough to build
+around" (Edwards). An earlier version of this rule capped every primary ball-handler at an octagon;
+his Thunder diagram refuted it: Gilgeous-Alexander carries the biggest on-ball load in the data and is
+drawn as a full rectangle, "the easiest player to build around", because he is "a good playmaker".
+What he penalises is scoring on the ball WITHOUT creating for others: Edwards (17 creation, 5 assists
+per 100) is a diamond, LaMelo (16.5 and 12.5) a hexagon. So the reading is a primary creator (on-ball
+creation per 100 in the top 15% of his season's regulars, `creationBySeason`; creation estimated from
+usage and assists before 2013-14) whose assists per unit of creation are low: nothing at 0.42 (SGA is
+0.41, Tatum 0.43), the full reading at 0.32 (Edwards 0.30, Kawhi 0.34), drawn in the four-point family
+down to his diamond. Harden (0.61), Mitchell (0.55) and Jokić (1.36) pass, so they are exempt — which
+means Harden reads as a square unless the playoff rule says otherwise, and by the level yardstick it
+does not.
 
 **The families.** Each rule has a family of m-pointed shapes with one parameter (the inner radius as a
 share of the outer), set so the family fills what the calibration says:
@@ -211,7 +218,7 @@ share of the outer), set so the family fills what the calibration says:
 | both | 12 points | near-circle → **spiky burst** |
 | non-spacer, otherwise clean | notched rectangle | his Castle |
 
-**Against his drawings** (`bun scripts/sanity-check.ts`): the 24 reference players match by
+**Against his drawings** (`bun scripts/sanity-check.ts`): the 41 reference players match by
 construction (r = 1.00). Before they were pinned, the calibration alone scored r = 0.44 over them
 (Knicks 0.38, Spurs 0.63, Lakers 0.24), from 0.11 on the lineup model alone and 0.17 with rules but no
 calibration; and since those 24 are the calibration set, the leave-one-out 15% is the number to quote
@@ -304,7 +311,7 @@ about 0.75.
 `bun scripts/sanity-check.ts` measures, from the same frames, how much of its own bounding box each of
 his shapes fills (octagon 0.83, circle 0.78, pentagon 0.70, diamond 0.50, four-point star 0.33 — the
 pixels match the geometry), which is the quantity our outlines are built on. The lineup model alone
-scored r = 0.11 against his 24 shapes: it charges on-ball load, he does not, and it left every role
+scored r = 0.11 against his 24 shapes (the first three diagrams): it charges on-ball load, he does not, and it left every role
 player a near-square. Removing the low-usage credit took it to 0.20; the three rules to 0.17-0.28;
 calibrating the fill to his diagrams to 0.44. The remaining disagreement is structural: in his drawing a
 clean shape means a good, complete player; ours now says that too, blended with measured fit, and the
@@ -332,7 +339,8 @@ points is difficult" — and names it the Wyman diagram. The graphic was measure
   one-skill five-point star, because the skill PCA had no defense skill and rebounding sits on the
   bipolar interior ↔ shooting factor. Defense is now a skill; Champagnie is a 0.98 square, as he drew.
 
-Across all 24 of his drawn players, shape r = 0.17; sizes r = 0.99 / 0.85 / 0.86 by graphic.
+Across all 41 of his drawn players, shape r = 0.99 (by construction: they are drawn as he drew them);
+sizes r = 0.95 / 0.92 / 0.88 / 0.90 / 0.88 by graphic (Knicks, Timberwolves, Thunder, Spurs, Lakers).
 
 ## The playoffs are in the plate
 

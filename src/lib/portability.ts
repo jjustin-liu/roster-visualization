@@ -95,7 +95,7 @@ export interface PortabilityModel {
   /** The rotated skill PCA behind the one-skill rule. */
   skill: SkillModel;
   /**
-   * The Wyman calibration: the outline's cleanness, fitted to the 24 shapes in
+   * The Wyman calibration: the outline's cleanness, fitted to the 41 shapes in
    * his three diagrams (`data/wyman-reference.json`). Score = a·fit-without-
    * on-ball + b·DPM; a player's score is ranked among regulars and that
    * percentile is mapped onto the distribution of fills HE draws, so a league
@@ -104,7 +104,7 @@ export interface PortabilityModel {
   wyman: {
     fitWeight: number;
     dpmWeight: number;
-    /** Leave-one-out R² of the calibration on his 24 players. Small; stated. */
+    /** Leave-one-out R² of the calibration on his 41 players. Small; stated. */
     looR2: number;
     /** Quantiles (1..99) of the score among 1,000+ minute regulars. */
     scoreQuantiles: number[];
@@ -125,6 +125,8 @@ export interface PortabilityModel {
    * against his own year, like the spacing rule.
    */
   handlingBySeason?: Record<string, { p85: number; p97: number }>;
+  /** On-ball creation per 100 among regulars, BY SEASON: the 85th percentile is where a player counts as a primary creator (the non-passer rule). */
+  creationBySeason?: Record<string, { p85: number }>;
   report: {
     lineups: number;
     possessions: number;
@@ -150,8 +152,11 @@ export interface LineupPlayer {
   minutes: number;
   oDpm: number;
   dDpm: number;
-  /** On-ball creation plus assists per 100, for the on-ball rule. Null or absent: the rule abstains. */
+  /** On-ball creation plus assists per 100 (kept for the model's scale). */
   handling?: number | null;
+  /** On-ball creation and assists per 100, for the non-passer rule. Null or absent: the rule abstains. */
+  creation?: number | null;
+  assists?: number | null;
   /** His playoff reading (`src/lib/playoffs.ts`), for the playoff rule. Null or absent: the rule abstains. */
   playoff?: { dpmDelta: number; shareScale: number } | null;
   /** Listed position; a center is never asked to space the floor. */
@@ -270,7 +275,7 @@ export function portabilityOf(model: PortabilityModel, p: LineupPlayer): Portabi
 
 /**
  * The outline's cleanness, calibrated to his diagrams. Two things predict his
- * shapes about equally on his 24 players (leave-one-out R² ~15%; nothing else
+ * shapes about equally on his 41 players (leave-one-out R² ~13%; nothing else
  * does better, and on-ball load does nothing): our measured fit with the
  * on-ball term removed, and plain quality. The score is ranked among regulars
  * and the percentile mapped onto the fills he draws, so the mix matches his.
@@ -319,14 +324,19 @@ export function wymanFill(model: PortabilityModel, score: number): number {
  *   volume doubled over these years). Drawn as a notch in an otherwise clean
  *   outline, the way his Castle is a rectangle with a bite out of it.
  *
- * ON-BALL  "the roster is built around him; he is not a piece you plug in"
- *   He draws no primary ball-handler as a square: Dončić is an octagon, Brunson
- *   a pentagon, Reaves a diamond, while Wembanyama, Towns and Duren — big usage,
- *   little handling — are squares and circles. So the reading is PLAYMAKING
- *   load, creation plus assists per 100, not usage: nothing at the 85th
- *   percentile of his season's regulars, and from the 97th up the outline is
- *   capped at the octagon he draws Dončić as (0.83), never a square. The cap
- *   only ever lowers the fill; the other rules still choose the family.
+ * NON-PASSER  "his passing volume is not high enough… this diamond is a little
+ *   bit rough to build around" (Edwards)
+ *   An earlier version capped every primary ball-handler at an octagon. His
+ *   Thunder diagram refutes it: Gilgeous-Alexander carries the biggest on-ball
+ *   load in the data and is drawn as a full rectangle, "the easiest player to
+ *   build around" — because he is "a good playmaker". What he penalises is
+ *   scoring on the ball WITHOUT creating for others: Edwards (17 creation,
+ *   5 assists per 100) is a diamond, LaMelo (16.5 and 12.5) a hexagon. So the
+ *   reading is a primary creator (creation per 100 in the top 15% of his
+ *   season's regulars) whose assists per created shot are low: nothing at 0.42
+ *   assists per unit of creation (SGA is 0.41, Tatum 0.43), the full reading at
+ *   0.32 (Edwards 0.30, Kawhi 0.34), drawn in the four-point family down to
+ *   his diamond (0.5). Harden (0.61) and Jokić (1.36) pass; they are exempt.
  */
 export const ONE_WAY_MAX_PENALTY = 0.45;
 export const ONE_SKILL_MAX_PENALTY = 0.3;
@@ -334,11 +344,11 @@ export const ONE_SKILL_MAX_PENALTY = 0.3;
 export const FLAW_NAMES_OUTLINE = 0.075;
 export const SPACING_MAX_PENALTY = 0.08;
 export const NOTCH_NAMES_OUTLINE = 0.025;
-/** The most an on-ball engine's outline can fill: his Dončić octagon. */
-export const ON_BALL_FILL_CAP = 0.83;
-/** Playmaking load percentiles between which the on-ball cap fades in. */
-export const ON_BALL_FROM = 0.85;
-export const ON_BALL_FULL = 0.97;
+/** The non-passer's outline at the full reading: his Edwards diamond. */
+export const NON_PASSER_FILL = 0.5;
+/** Assists per unit of on-ball creation between which the non-passer reading fades in (full at or below the first). */
+export const NON_PASSER_FULL = 0.32;
+export const NON_PASSER_FROM = 0.42;
 /**
  * PLAYOFFS  "he's a playoff dropper" / "you can't play him in the playoffs"
  *   The playoff reading (see `src/lib/playoffs.ts`) already sets his SIZE:
@@ -361,8 +371,8 @@ export interface Flaws {
   oneSkill: { penalty: number; thirdBest: number; best: string[] };
   /** NON-SPACER: `z` is his three-point makes per 100 in SDs among perimeter regulars of his season. */
   spacing: { penalty: number; z: number | null };
-  /** ON-BALL: `cap` is the most his outline may fill (FILL_MAX when the rule is silent); `percentile` his playmaking load among his season's regulars, null when unknown. */
-  onBall: { cap: number; percentile: number | null };
+  /** NON-PASSER: `cap` is the most his outline may fill (FILL_MAX when the rule is silent), `t` the reading from 0 to 1, `ratio` his assists per unit of on-ball creation (null when unknown or not a primary creator). */
+  nonPasser: { cap: number; t: number; ratio: number | null };
   /** PLAYOFFS: `survives` is the share of his regular-season value left in the playoffs (1 with no record), `cap` the fill that allows, `unplayable` whether his minutes share collapsed. */
   playoff: { survives: number; cap: number; unplayable: boolean };
 }
@@ -404,14 +414,25 @@ export function handlingScale(model: PortabilityModel, season: number | undefine
   return table[String(nearest)];
 }
 
-/** The on-ball reading: where his playmaking load sits among his season's regulars, and the fill cap that implies. */
-export function onBallOf(model: PortabilityModel, handling: number | null | undefined, season: number | undefined): Flaws['onBall'] {
-  const scale = handlingScale(model, season);
-  if (handling === null || handling === undefined || !scale) return { cap: FILL_MAX, percentile: null };
-  // Linear between the two stored percentiles; beyond them, pinned.
-  const t = clamp01((handling - scale.p85) / (scale.p97 - scale.p85));
-  const percentile = ON_BALL_FROM + t * (ON_BALL_FULL - ON_BALL_FROM);
-  return { cap: FILL_MAX - t * (FILL_MAX - ON_BALL_FILL_CAP), percentile };
+/** The creation scale for a season; the nearest season stands in for one the model has not seen. */
+export function creationScale(model: PortabilityModel, season: number | undefined): { p85: number } | null {
+  const table = model.creationBySeason;
+  if (!table) return null;
+  const keys = Object.keys(table).map(Number);
+  if (keys.length === 0) return null;
+  const y = season ?? Math.max(...keys);
+  const nearest = keys.reduce((a, b) => (Math.abs(b - y) < Math.abs(a - y) ? b : a));
+  return table[String(nearest)];
+}
+
+/** The non-passer reading: a primary creator's assists per unit of creation, and the fill cap that implies. */
+export function nonPasserOf(model: PortabilityModel, creation: number | null | undefined, assists: number | null | undefined, season: number | undefined): Flaws['nonPasser'] {
+  const scale = creationScale(model, season);
+  if (creation === null || creation === undefined || assists === null || assists === undefined || !scale) return { cap: FILL_MAX, t: 0, ratio: null };
+  if (creation < scale.p85) return { cap: FILL_MAX, t: 0, ratio: null };
+  const ratio = assists / Math.max(creation, 0.1);
+  const t = clamp01((NON_PASSER_FROM - ratio) / (NON_PASSER_FROM - NON_PASSER_FULL));
+  return { cap: FILL_MAX - t * (FILL_MAX - NON_PASSER_FILL), t, ratio };
 }
 
 export function flawsOf(model: PortabilityModel, p: LineupPlayer, season?: number): Flaws {
@@ -440,7 +461,7 @@ export function flawsOf(model: PortabilityModel, p: LineupPlayer, season?: numbe
     oneWay: { end: gross > 0 ? end : null, gross, penalty: oneWay, weakEnd },
     oneSkill: { penalty: oneSkill, thirdBest, best: ranked.filter((x) => x[0] >= 0.5).map((x) => x[1]) },
     spacing: { penalty: spacing, z: zSpacing },
-    onBall: onBallOf(model, p.handling, season),
+    nonPasser: nonPasserOf(model, p.creation, p.assists, season),
     playoff: playoffFlaw(p.oDpm + p.dDpm, p.playoff),
   };
 }
@@ -462,6 +483,8 @@ function familyFor(flaws: Flaws): PointedKind | null {
   const skill = flaws.oneSkill.penalty >= FLAW_NAMES_OUTLINE;
   if (flaws.playoff.unplayable) return 'burst';
   if (way && skill) return 'burst';
+  // A scorer who does not pass is drawn in the four-point family, like his Edwards diamond.
+  if (flaws.nonPasser.t >= 0.5 && !way && !skill) return 'quad';
   if (way) return flaws.oneWay.end === 'offense' ? 'tri' : 'quad';
   if (skill) return 'penta';
   return null;
@@ -488,9 +511,10 @@ export function referenceOutline(entry: { kind: ShapeKind; fill: number }, inter
 const FIXED_FILL: Partial<Record<ShapeKind, number>> = { circle: Math.PI / 4, octagon: 0.828, hexagon: 0.75, pentagon: 0.691, triangle: 0.5, diamond: 0.5, star: 0.318, square: 1, rect: 1 };
 
 export function outlineFor(model: PortabilityModel, port: Portability, flaws?: Flaws, dpm = 0): Outline {
-  // The calibrated fill, then the on-ball cap (an engine is never a square) and
-  // the playoff cap (a dropper is drawn as cleanly as the value that survives May).
-  const fill = Math.min(wymanFill(model, wymanScore(model, port, dpm)), flaws?.onBall.cap ?? FILL_MAX, flaws?.playoff.cap ?? FILL_MAX);
+  // The calibrated fill, then the non-passer cap (a scorer who does not create
+  // for others is at best his Edwards diamond) and the playoff cap (a dropper
+  // is drawn as cleanly as the value that survives May).
+  const fill = Math.min(wymanFill(model, wymanScore(model, port, dpm)), flaws?.nonPasser.cap ?? FILL_MAX, flaws?.playoff.cap ?? FILL_MAX);
   // Component 0 is perimeter ↔ interior. An interior big is drawn long, the way
   // the video draws Robinson and Kessler; it costs nothing in tiling.
   const interior = Math.max(0, -port.style[0] - 0.5);
@@ -557,7 +581,7 @@ export function portabilityReason(port: Portability, flaws?: Flaws): string {
   if (flaws && flaws.oneWay.gross >= FLAW_NAMES_OUTLINE) text += `. One-way: ${flaws.oneWay.end} is the hole (${signedText(flaws.oneWay.weakEnd)})`;
   if (flaws && flaws.oneSkill.penalty >= FLAW_NAMES_OUTLINE) text += `. Narrow: ${flaws.oneSkill.best.length ? flaws.oneSkill.best.join(' and ') : 'no standout skill'}, little else`;
   if (flaws && flaws.spacing.penalty >= NOTCH_NAMES_OUTLINE) text += `. Non-spacer: ${threeMakesPer100Text(flaws.spacing.z)}`;
-  if (flaws && flaws.onBall.cap < FILL_MAX - 1e-9 && flaws.onBall.percentile !== null) text += `. On-ball: playmaking load at the ${Math.round(flaws.onBall.percentile * 100)}th percentile of regulars, the roster is built round him`;
+  if (flaws && flaws.nonPasser.t > 0 && flaws.nonPasser.ratio !== null) text += `. Non-passer: a primary creator with ${flaws.nonPasser.ratio.toFixed(2)} assists per unit of on-ball creation${flaws.nonPasser.t >= 0.5 ? ', rough to build around' : ''}`;
   if (flaws && flaws.playoff.unplayable) text += `. Hard to play in the playoffs: his minutes share falls to ×${(flaws.playoff.survives > 0 ? flaws.playoff.survives : 0).toFixed(2)} of his regular-season self`;
   else if (flaws && flaws.playoff.cap < FILL_MAX - PLAYOFF_NAMES_OUTLINE) text += `. Playoff dropper: ${Math.round(flaws.playoff.survives * 100)}% of his regular-season value survives the playoffs`;
   return text;

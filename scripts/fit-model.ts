@@ -10,7 +10,7 @@
  */
 import { readdirSync, readFileSync, writeFileSync } from 'fs';
 import { ridge, scoreWeights, symmetricEigen, varimax, weightedCorrelation, weightedQuantiles, weightedR2 } from '../src/lib/fit';
-import { handlingOf, STYLE_STATS, WEAK_END } from '../src/lib/model';
+import { estimateCreation, handlingOf, STYLE_STATS, WEAK_END } from '../src/lib/model';
 import { portabilityOf, predictLineup, skillFeatures, skillScores, styleScores, threeMakesPer100, STYLE_COMPONENTS as K, type PortabilityModel, type SideModel, type SkillModel } from '../src/lib/portability';
 import type { LineupRow, SeasonSnapshot } from '../src/data';
 
@@ -38,13 +38,16 @@ interface P {
   style: number[];
   /** On-ball creation plus assists per 100; null when the source has neither. */
   handling: number | null;
+  /** On-ball creation per 100 (measured, else estimated); null when unknown. */
+  creation: number | null;
+  assists: number | null;
 }
 const players: P[] = [];
 for (const f of readdirSync('data').filter((x) => /^\d{4}\.json$/.test(x))) {
   const snap: SeasonSnapshot = JSON.parse(readFileSync(`data/${f}`, 'utf8'));
   for (const p of snap.players) {
     if (!p.style) continue;
-    players.push({ team: p.team, id: p.nbaId, season: snap.season, name: p.name, minutes: p.minutes, o: p.oDpm, d: p.dDpm, style: p.style, handling: handlingOf(p) });
+    players.push({ team: p.team, id: p.nbaId, season: snap.season, name: p.name, minutes: p.minutes, o: p.oDpm, d: p.dDpm, style: p.style, handling: handlingOf(p), creation: p.creation ?? estimateCreation(p.tsa, p.assists), assists: p.assists });
   }
 }
 
@@ -301,7 +304,7 @@ model.otherFour = {
 };
 
 // The scale the outline is drawn on: real rotation players.
-const asLineupPlayer = (p: P) => ({ style: p.style, minutes: p.minutes, oDpm: p.o, dDpm: p.d, handling: p.handling });
+const asLineupPlayer = (p: P) => ({ style: p.style, minutes: p.minutes, oDpm: p.o, dDpm: p.d, handling: p.handling, creation: p.creation, assists: p.assists });
 const ports = players.filter((p) => p.minutes >= 1000).map((p) => portabilityOf(model, asLineupPlayer(p)).total).sort((a, b) => a - b);
 model.portabilityMedian = ports[Math.floor(ports.length / 2)];
 const meanPort = ports.reduce((s, x) => s + x, 0) / ports.length;
@@ -327,7 +330,15 @@ for (const season of new Set(players.map((p) => p.season))) {
 }
 {
   const last = model.handlingBySeason[String(Math.max(...players.map((p) => p.season)))];
-  console.log(`On-ball scale: playmaking load among regulars, latest season 85th pct ${last.p85.toFixed(1)}, 97th ${last.p97.toFixed(1)} per 100.`);
+  console.log(`Playmaking-load scale: among regulars, latest season 85th pct ${last.p85.toFixed(1)}, 97th ${last.p97.toFixed(1)} per 100.`);
+}
+// The non-passer scale: on-ball creation per 100 among regulars, by season — the
+// 85th percentile is where a player counts as a primary creator.
+model.creationBySeason = {};
+for (const season of new Set(players.map((p) => p.season))) {
+  const cs = players.filter((p) => p.season === season && p.minutes >= 1000 && p.creation !== null).map((p) => p.creation as number).sort((a, b) => a - b);
+  if (cs.length === 0) continue;
+  model.creationBySeason[String(season)] = { p85: cs[Math.min(cs.length - 1, Math.floor(0.85 * cs.length))] };
 }
 // ── The Wyman calibration: his 24 shapes → the outline's cleanness ─────────
 {

@@ -80,7 +80,7 @@ export function flawLegend(): string {
   return (
     rows.map(([k, label]) => `<span>${pointedGlyph(k, 0.68, '#8b8b90', 14)}${pointedGlyph(k, 0.34, '#8b8b90', 14)}${esc(label)}</span>`).join('') +
     `<span>${glyphSvg(shapePolygon('notched', 0.5, 1, 0, 0.3), '#8b8b90', 14)}Non-spacer</span>` +
-    `<span>${glyphSvg(shapePolygon('super', 0.5, 1, 0, exponentForFill(0.83)), '#8b8b90', 14)}On-ball engine: never a square</span>`
+    `<span>${glyphSvg(shapePolygon('diamond', 0.5, 1, 0), '#8b8b90', 14)}Scores on the ball, does not pass</span>`
   );
 }
 

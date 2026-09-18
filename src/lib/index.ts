@@ -15,6 +15,7 @@ import {
   deficitBelowReplacement,
   valueOverReplacement,
   handlingOf,
+  estimateCreation,
   type ShapeInput,
 } from './model';
 import { packShapes, placeExtras, type PlacedShape } from './pack';
@@ -78,7 +79,7 @@ export interface RosterShapePlayer {
   /** The outline's parameter: a superellipse exponent for `super`, an inner-radius ratio for the pointed kinds; null under the fallback. */
   exponent: number | null;
   /** Which of the two rules named his outline, if either. */
-  flaw: 'no offense' | 'no defense' | 'one skill' | 'one-way and narrow' | 'non-spacer' | 'on-ball' | 'playoff dropper' | 'hard to play in the playoffs' | null;
+  flaw: 'no offense' | 'no defense' | 'one skill' | 'one-way and narrow' | 'non-spacer' | 'non-passer' | 'playoff dropper' | 'hard to play in the playoffs' | null;
   /** The shape he drew, when this player-season is one of the 24 in his diagrams; the outline is his. */
   reference: string | null;
   /** Share of its bounding box his outline fills: how well it tiles. Linear in portability. */
@@ -228,23 +229,23 @@ export function buildRosterShapePlate(inputs: ShapeInput[], model?: PortabilityM
     let archetype = classify(p);
     let fitted: { total: number; offense: number; defense: number; exponent: number; tiling: number; family: StyleFamily; flaw: RosterShapePlayer['flaw']; reference: string | null } | null = null;
     if (model && p.style) {
-      const lp = { style: p.style, minutes: p.minutes, oDpm: p.oDpm, dDpm: p.dDpm, handling: handlingOf(p), playoff: p.playoff ?? null, position: p.position };
+      const lp = { style: p.style, minutes: p.minutes, oDpm: p.oDpm, dDpm: p.dDpm, handling: handlingOf(p), creation: p.creation ?? estimateCreation(p.tsa, p.assists), assists: p.assists, playoff: p.playoff ?? null, position: p.position };
       const port = portabilityOf(model, lp);
       const flaws = flawsOf(model, lp, season);
       const entry = model.wyman.reference.find((e) => e.name === p.name && e.season === season);
       const outline = entry ? referenceOutline(entry, Math.max(0, -port.style[0] - 0.5)) : outlineFor(model, port, flaws, p.oDpm + p.dDpm);
       const way = flaws.oneWay.gross >= FLAW_NAMES_OUTLINE;
       const narrow = flaws.oneSkill.penalty >= FLAW_NAMES_OUTLINE;
-      // A cap names a smooth outline only when it is what held the fill down; the playoff cap takes precedence over the on-ball cap when both bind.
+      // A cap names a smooth outline only when it is what held the fill down; the playoff cap takes precedence over the non-passer cap when both bind.
       const dropper = flaws.playoff.cap < FILL_MAX - PLAYOFF_NAMES_OUTLINE && outline.fitFill <= flaws.playoff.cap + 1e-9;
-      const onBall = flaws.onBall.cap < FILL_MAX - 1e-9 && outline.fitFill <= flaws.onBall.cap + 1e-9;
+      const nonPasser = flaws.nonPasser.t > 0 && outline.fitFill <= flaws.nonPasser.cap + 1e-9;
       const flaw = entry
         ? null
         : outline.kind === 'super'
           ? dropper
             ? ('playoff dropper' as const)
-            : onBall
-              ? ('on-ball' as const)
+            : nonPasser
+              ? ('non-passer' as const)
               : null
           : outline.kind === 'notched'
             ? ('non-spacer' as const)
@@ -256,7 +257,9 @@ export function buildRosterShapePlate(inputs: ShapeInput[], model?: PortabilityM
                   ? flaws.oneWay.end === 'offense'
                     ? ('no offense' as const)
                     : ('no defense' as const)
-                  : ('one skill' as const);
+                  : narrow
+                    ? ('one skill' as const)
+                    : ('non-passer' as const);
       fitted = { total: port.total, offense: port.offense, defense: port.defense, exponent: outline.param, tiling: outline.fill, family: familyOf(port.style), flaw, reference: entry?.shape ?? null };
       archetype = { kind: outline.kind, aspect: outline.aspect, label: entry ? `His diagram: ${entry.shape}` : fitLabel(outline.fill), reason: (entry ? 'Drawn as in his Wyman diagram. ' : '') + portabilityReason(port, flaws), estimated: false };
     }
