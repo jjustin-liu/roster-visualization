@@ -1,0 +1,20 @@
+{
+  "name": "opaque-square",
+  "private": true,
+  "type": "module",
+  "description": "NBA rosters drawn as shapes in a box: area is value, outline is role. A data-driven take on Taylormetrics' \"opaque square\".",
+  "scripts": {
+    "export": "bun scripts/export-data.ts",
+    "build": "bun scripts/build.ts",
+    "test": "bun test --timeout 60000",
+    "open": "open dist/index.html",
+    "deploy": "bun scripts/build.ts && vercel deploy --prod --yes --archive=tgz"
+  },
+  "dependencies": {
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.6.0"
+  }
+}
