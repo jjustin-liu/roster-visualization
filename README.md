@@ -13,8 +13,7 @@ lineup results. It agrees with him on most of his examples (Anunoby, Bridges, Ha
 rectangle; Brunson, Dončić and Reaves the awkward shapes) and disagrees on one, which is a finding
 rather than a bug: see "Where the data disagrees with the video".
 
-Live: https://roster-shapes.vercel.app (`bun run deploy` rebuilds and publishes it; the older
-https://opaque-square.vercel.app still serves the previous project).
+Live: https://roster-shapes.vercel.app
 
 ## Run it
 
