@@ -13,7 +13,7 @@ lineup results. It agrees with him on most of his examples (Anunoby, Bridges, Ha
 rectangle; Brunson, Dončić and Reaves the awkward shapes) and disagrees on one, which is a finding
 rather than a bug: see "Where the data disagrees with the video".
 
-Live: https://roster-shapes.vercel.app
+Live: https://roster-visualization.vercel.app
 
 ## Run it
 
@@ -24,7 +24,7 @@ bun run build        # every season in data/ → dist/<season>/index.html + dist
 bun run open         # opens dist/index.html, which redirects to the latest season
 bun test             # 61 tests
 bun scripts/verify.ts  # every plate of every season: nothing shrunk, nobody undrawn; lists what overflows
-bun run deploy       # build + `vercel deploy --prod --archive=tgz` → https://roster-shapes.vercel.app
+bun run deploy       # build + `vercel deploy --prod --archive=tgz` → https://roster-visualization.vercel.app
 ```
 
 The deploy uploads one archive, not 800 files: Vercel's free tier caps file uploads per day and a
